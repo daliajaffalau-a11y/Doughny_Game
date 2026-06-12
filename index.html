@@ -266,6 +266,74 @@
             .instructions-banner {
                 display: none !important;
             }
+            .screen {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 16px;
+                margin-bottom: 15px;
+            }
+            p {
+                font-size: 13px;
+                margin-bottom: 15px;
+            }
+            .controls-info {
+                padding: 10px;
+                font-size: 11px;
+            }
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+            .control-btn.secondary {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+            #hud {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                font-size: 10px;
+            }
+            .hud-panel {
+                padding: 6px 10px;
+                gap: 5px;
+            }
+            #hearts {
+                font-size: 12px;
+                max-width: 100px;
+            }
+        }
+
+        /* Landscape orientation fixes for mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .screen {
+                padding: 15px;
+                max-width: 400px;
+            }
+            h1 {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            .controls-info {
+                display: none;
+            }
+            #mobile-controls {
+                bottom: 10px;
+            }
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            .control-btn.secondary {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+                margin-bottom: 5px;
+            }
         }
 
         .instructions-banner {
