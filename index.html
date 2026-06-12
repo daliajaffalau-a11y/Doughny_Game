@@ -2,15 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Doughny's Adventure - Retro Platformer</title>
     <meta name="description" content="Help Doughny jump, spin, and shoot fireballs to complete 3 levels and defeat Lord Jellyfill in this arcade action game.">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;700&display=swap');
 
-        body {
+        html, body {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: fixed;
             overflow: hidden;
+        }
+
+        body {
             background-color: #111;
             font-family: 'Outfit', sans-serif;
             user-select: none;
@@ -38,6 +45,10 @@
             backdrop-filter: blur(8px);
             z-index: 10;
             transition: all 0.3s ease;
+            max-height: 90vh;
+            max-height: 90dvh;
+            overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .screen.hidden {
@@ -268,6 +279,8 @@
             }
             .screen {
                 padding: 20px;
+                width: 90%;
+                max-width: 400px;
             }
             h1 {
                 font-size: 16px;
@@ -839,10 +852,21 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
+        function getViewportSize() {
+            if (window.visualViewport) {
+                return {
+                    width: window.visualViewport.width,
+                    height: window.visualViewport.height
+                };
+            }
+            return { width: window.innerWidth, height: window.innerHeight };
+        }
+
         function resizeCanvas() {
             const oldGroundY = canvas.height - 50;
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const vp = getViewportSize();
+            canvas.width = vp.width;
+            canvas.height = vp.height;
             const newGroundY = canvas.height - 50;
 
             // Adjust player Y relative to ground change
@@ -886,7 +910,21 @@
             }
         }
         window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeCanvas, 200);
+        });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', resizeCanvas);
+        }
+        document.addEventListener('fullscreenchange', () => {
+            setTimeout(resizeCanvas, 100);
+        });
         resizeCanvas();
+
+        // Prevent the page itself from scrolling/bouncing on mobile
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
 
         const sprites = {
             idle: new Image(),
@@ -1187,6 +1225,13 @@
 
         function startGame() {
             sound.init();
+
+            // Request fullscreen on the user gesture (helps hide mobile browser UI)
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            setTimeout(resizeCanvas, 150);
+
             score = 0;
             playerHearts = 10;
             updateHeartsUI();
@@ -1202,6 +1247,12 @@
 
         function retryGame() {
             sound.init();
+
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            setTimeout(resizeCanvas, 150);
+
             score = 0;
             playerHearts = 10;
             updateHeartsUI();
