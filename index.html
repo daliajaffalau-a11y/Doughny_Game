@@ -126,8 +126,11 @@
 
         #hearts {
             color: #ff3366;
-            font-size: 18px;
-            letter-spacing: 3px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 150px;
         }
 
         #score-panel {
@@ -138,7 +141,7 @@
             color: #00ffff;
         }
 
-        #mute-btn {
+        #mute-btn, #fullscreen-btn {
             background: rgba(0, 0, 0, 0.6);
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
@@ -151,7 +154,7 @@
             transition: background 0.2s;
         }
 
-        #mute-btn:hover {
+        #mute-btn:hover, #fullscreen-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             transform: none;
         }
@@ -215,34 +218,41 @@
         }
 
         .control-btn {
-            width: 70px;
-            height: 70px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 3px solid rgba(255, 255, 255, 0.4);
+            width: 80px;
+            height: 80px;
+            background: rgba(64, 150, 238, 0.4);
+            border: 4px solid rgba(255, 255, 255, 0.6);
             border-radius: 50%;
             color: white;
-            font-size: 24px;
+            font-size: 32px;
             display: flex;
             justify-content: center;
             align-items: center;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
             touch-action: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
         }
 
         .control-btn:active {
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(64, 150, 238, 0.7);
             transform: scale(0.9);
         }
 
+        #btn-fire {
+            background: rgba(255, 69, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        #btn-tornado {
+            background: rgba(139, 69, 19, 0.6);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
         .control-btn.secondary {
-            width: 55px;
-            height: 55px;
-            font-size: 18px;
-            background: rgba(255, 69, 0, 0.3);
-            border-color: rgba(255, 69, 0, 0.5);
-            margin-bottom: 10px;
+            width: 65px;
+            height: 65px;
+            font-size: 22px;
+            margin-bottom: 15px;
         }
 
         /* Show mobile controls only on touch devices */
@@ -291,6 +301,7 @@
             <span>SCORE:</span>
             <span id="score-val">0</span>
         </div>
+        <button id="fullscreen-btn" onclick="toggleFullScreen()">⛶</button>
         <button id="mute-btn" onclick="toggleMute()">🔊</button>
     </div>
 
@@ -446,7 +457,7 @@
                 bgColor: '#0f0f1c',
                 groundColor: '#26262b',
                 grassColor: '#4d4d54', // Brick stone top
-                goalX: 950,
+                goalX: 9999, // Off-screen until boss defeat
                 enemies: [], // No standard enemies; boss instead
                 platforms: [
                     { x: 150, yOffset: 160, width: 180, height: 25 },
@@ -497,6 +508,18 @@
             isMuted = !isMuted;
             masterGain.gain.value = isMuted ? 0 : 0.3;
             document.getElementById('mute-btn').innerText = isMuted ? '🔇' : '🔊';
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
         }
 
         const sound = {
@@ -799,6 +822,7 @@
 
         const sprites = {
             idle: new Image(),
+            run: new Image(),
             tornado: new Image(),
             fireAbility: new Image(),
             goal: new Image(),
@@ -808,6 +832,7 @@
         };
 
         sprites.idle.src = 'assets/sprites/doughny_idle.png';
+        sprites.run.src = 'assets/sprites/doughny_run.png';
         sprites.tornado.src = 'assets/sprites/tornado.png';
         sprites.fireAbility.src = 'assets/sprites/fire_ability.png';
         sprites.goal.src = 'assets/sprites/goal.png';
@@ -1625,12 +1650,12 @@
 
             // Projectiles
             projectiles.forEach(p => {
-                drawProjectile(p, '#ff4500');
+                drawProjectile(p, '#ff4500', true);
             });
 
             // Boss Projectiles
             bossProjectiles.forEach(bp => {
-                drawProjectile(bp, '#9932cc'); // Purple jelly balls
+                drawProjectile(bp, '#9932cc', false);
             });
 
             // Boss
@@ -1884,7 +1909,18 @@
             const gw = 150;
             const gh = 200;
 
-            // Giant glowing spinning portal circle
+            const isLoaded = sprites.goal.complete && sprites.goal.naturalWidth > 0;
+            if (isLoaded) {
+                ctx.save();
+                const hoverOffset = Math.sin(Date.now() / 300) * 10;
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = '#00ffff';
+                ctx.drawImage(sprites.goal, gx, gy + hoverOffset, gw, gh);
+                ctx.restore();
+                return;
+            }
+
+            // Giant glowing spinning portal circle (fallback)
             ctx.save();
             ctx.translate(gx + gw/2, gy + gh/2);
 
@@ -2032,7 +2068,22 @@
         }
 
         // --- Projectiles Draw ---
-        function drawProjectile(p, color) {
+        function drawProjectile(p, color, useSprite = true) {
+            const isLoaded = useSprite && sprites.projectile.complete && sprites.projectile.naturalWidth > 0;
+            if (isLoaded) {
+                ctx.save();
+                ctx.translate(p.x + p.width/2, p.y + p.height/2);
+                // Rotate sprite to match travel direction if vy exists, otherwise just horizontal
+                if (p.vy) ctx.rotate(Math.atan2(p.vy, p.vx));
+                else if (p.vx < 0) ctx.scale(-1, 1);
+                
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = color;
+                ctx.drawImage(sprites.projectile, -p.width/2, -p.height/2, p.width, p.height);
+                ctx.restore();
+                return;
+            }
+
             ctx.save();
             ctx.fillStyle = color;
             ctx.shadowBlur = 10;
@@ -2050,6 +2101,7 @@
             let currentSprite = sprites.idle;
             if (player.state === 'tornado') currentSprite = sprites.tornado;
             else if (player.state === 'fire') currentSprite = sprites.fireAbility;
+            else if (player.grounded && Math.abs(player.vx) > 0.1) currentSprite = sprites.run;
 
             const isLoaded = currentSprite.complete && currentSprite.naturalWidth > 0;
 
